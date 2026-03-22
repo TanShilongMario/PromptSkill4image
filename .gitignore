@@ -1,0 +1,12 @@
+# 本地 AI Agent 配置目录（不上传）
+.claude/
+.cursor/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 编辑器临时文件
+*.swp
+*.swo
+*~
