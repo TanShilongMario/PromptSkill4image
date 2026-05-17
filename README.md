@@ -1,209 +1,311 @@
 # Prompt Engineering Skill
 
-**通用 AI 提示词工程助手 Skill** | A universal AI prompt engineering assistant skill
+面向中文用户的 AI 图像提示词工程 Skill。它可以把图片、粗糙想法、短关键词、中文提示词、英文提示词或中英混合输入，转成可直接用于生图工具的高质量提示词。
 
-将复杂提示词拆解为结构化变量，生成双语词库，可选输出 PromptFill 兼容的 JSON 模板。
-
-Deconstruct complex prompts into structured variables, generate bilingual vocabulary banks, and optionally output PromptFill-compatible JSON templates.
+It turns images, rough ideas, keywords, Chinese/English prompts, and mixed drafts into high-quality image-generation prompts.
 
 ---
 
-## 功能介绍 | Features
+## 适合做什么
 
-| 功能 | Feature | 说明 |
-|------|---------|------|
-| 提示词拆分 | Prompt Deconstruction | 识别所有可变部分，统一标注为 `{{variable}}` |
-| 变量分类 | Variable Analysis | 按语义分类（主体/道具/场景/视觉/技术参数） |
-| 词库生成 | Vocabulary Banks | 每个变量生成 5–12 个双语候选词条 |
-| 双语翻译 | Bilingual Output | 同时输出中文和英文版本的结构化提示词 |
-| 模板导出 | PromptFill JSON | 可选生成可导入 [PromptFill](https://www.aipromptfill.com) 的完整 JSON |
-| 质量评估 | Quality Evaluation | 从完整性、专业性、可变性三个维度评分 |
+这个 Skill 重点解决三类需求：
+
+1. **图像反推提示词**：根据参考图生成可复现画面的提示词草稿。
+2. **粗糙提示词扩写**：把一句话、关键词或半成品提示词扩写成高级版本。
+3. **翻译转写与变量提炼**：把提示词翻译成更适合图像模型的表达，同时提炼 `{{variable}}` 变量并提供词组建议。
+
+输出时会优先给出可直接使用的结果，再给出变量、词组建议和后续优化方向。默认中文说明，必要时提供英文生图提示词。
+
+---
+
+## 设计原则
+
+- 中文优先，适合中文用户直接使用。
+- 先明确用户需求，再决定输出形式。
+- 不把所有输入都强行变成复杂模板。
+- 对极简提示词友好：先输出短而强的版本，再提供高级结构化版本。
+- 英文提示词采用图像模型常用表达，不做机械直译。
+- 支持 PromptFill 的 `{{variable}}` 与 `{{variable: 默认值}}` 语法。
+- 可选导出 PromptFill 兼容 JSON。
 
 ---
 
-## 安装方式 | Installation
+## 文件结构
 
-本 Skill 以 Markdown 文件形式提供，**兼容所有支持外部 Skill/规则加载的 AI Agent**，无需额外依赖。
+```text
+prompt-engineering/
+├── SKILL.md              # 主技能指令，安装时必须包含
+├── vocabulary-banks.md   # 常用变量与双语词组参考
+├── examples.md           # 使用示例
+├── README.md             # 安装和使用说明
+└── LICENSE               # MIT 许可证
+```
 
-This skill is provided as plain Markdown files and is **compatible with any AI agent that supports external skill/rule loading**.
+公开安装时建议复制根目录这几个文件。`skills/` 目录是 Prompt Fill 内部流程沉淀，不是外部 Agent 安装必需文件。
 
 ---
+
+## 快速安装
+
+```bash
+git clone https://github.com/TanShilongMario/PromptSkill4image.git
+```
+
+后续根据你使用的 Agent，把仓库根目录文件复制到对应的 Skill、Rule、Memory 或 Instructions 目录。
+
+---
+
+## 主流 Agent 安装方式
 
 ### Cursor
 
-**个人全局安装**（所有项目均可使用）：
+Cursor 原生支持 `~/.cursor/skills/<skill-name>/SKILL.md` 结构，推荐使用这种方式。
+
+全局安装，所有项目可用：
 
 ```bash
-# 克隆仓库
-git clone https://github.com/TanShilongMario/PromptSkill4image.git
-
-# 复制到 Cursor 全局 skills 目录（skill 需要放在一个子目录中）
 mkdir -p ~/.cursor/skills/prompt-engineering
-cp PromptSkill4image/SKILL.md PromptSkill4image/vocabulary-banks.md PromptSkill4image/examples.md ~/.cursor/skills/prompt-engineering/
+cp PromptSkill4image/SKILL.md PromptSkill4image/vocabulary-banks.md PromptSkill4image/examples.md PromptSkill4image/README.md PromptSkill4image/LICENSE ~/.cursor/skills/prompt-engineering/
 ```
 
-**项目级安装**（仅当前项目，可随仓库共享）：
+项目级安装，仅当前项目可用：
 
 ```bash
 mkdir -p /your-project/.cursor/skills/prompt-engineering
-cp PromptSkill4image/SKILL.md PromptSkill4image/vocabulary-banks.md PromptSkill4image/examples.md /your-project/.cursor/skills/prompt-engineering/
+cp PromptSkill4image/SKILL.md PromptSkill4image/vocabulary-banks.md PromptSkill4image/examples.md PromptSkill4image/README.md PromptSkill4image/LICENSE /your-project/.cursor/skills/prompt-engineering/
 ```
 
-> 注意：请勿放入 `~/.cursor/skills-cursor/`，该目录为 Cursor 内置保留目录。
+使用示例：
 
----
+```text
+优化这个图像提示词：赛博朋克少女，雨夜街道，霓虹灯
+```
 
-### Claude Code (claude.ai/code)
+### Claude Code
 
-将 Skill 文件放入项目的 `.claude/skills/` 目录，Claude Code 会自动识别：
+Claude Code 可使用项目级 `.claude/skills/<skill-name>/SKILL.md` 结构。
 
 ```bash
-git clone https://github.com/TanShilongMario/PromptSkill4image.git
-
-# 进入你的项目
-cd /your-project
-
-# 创建 skills 目录（如不存在）
-mkdir -p .claude/skills/prompt-engineering
-
-# 复制 skill
-cp PromptSkill4image/SKILL.md PromptSkill4image/vocabulary-banks.md PromptSkill4image/examples.md .claude/skills/prompt-engineering/
+mkdir -p /your-project/.claude/skills/prompt-engineering
+cp PromptSkill4image/SKILL.md PromptSkill4image/vocabulary-banks.md PromptSkill4image/examples.md PromptSkill4image/README.md PromptSkill4image/LICENSE /your-project/.claude/skills/prompt-engineering/
 ```
 
-之后在对话中提及"分析提示词"或"prompt engineering"即可触发。
+如果你的 Claude Code 环境没有启用 Skills，也可以把 `SKILL.md` 放入项目文档目录，并在对话中明确引用：
 
----
+```text
+请阅读 prompt-engineering/SKILL.md，并按这个 Skill 帮我优化下面的图像提示词：...
+```
 
-### 其他 AI Agent（通用方式）
+### Windsurf
 
-对于 **Windsurf、Copilot Workspace、Aider** 等其他 AI 编码工具，将文件放入项目目录后手动引用：
+Windsurf 更常见的方式是通过项目规则或上下文文档引用。
+
+推荐做法：
 
 ```bash
 mkdir -p /your-project/prompt-engineering
 cp PromptSkill4image/SKILL.md PromptSkill4image/vocabulary-banks.md PromptSkill4image/examples.md /your-project/prompt-engineering/
 ```
 
-然后在对话中直接引用文件：
+然后在 Windsurf Rules、项目说明或对话中引用：
+
+```text
+请始终按 prompt-engineering/SKILL.md 的流程处理图像提示词需求。
 ```
-请阅读 prompt-engineering/SKILL.md 并按其指引帮我分析这段提示词：
-[你的提示词]
+
+### Aider
+
+Aider 可通过约定文档或只读上下文文件使用。
+
+推荐做法：
+
+```bash
+mkdir -p /your-project/prompt-engineering
+cp PromptSkill4image/SKILL.md PromptSkill4image/vocabulary-banks.md PromptSkill4image/examples.md /your-project/prompt-engineering/
+```
+
+使用时在提示中引用：
+
+```text
+Read prompt-engineering/SKILL.md and follow it when improving this image prompt:
+赛博朋克少女，雨夜街道，霓虹灯
+```
+
+### GitHub Copilot / Copilot Chat
+
+Copilot 不同环境对自定义 Skill 的支持不完全一致，最稳妥的方式是将 `SKILL.md` 放入项目文档，并在 Chat 中引用。
+
+```bash
+mkdir -p /your-project/docs/prompt-engineering
+cp PromptSkill4image/SKILL.md PromptSkill4image/vocabulary-banks.md PromptSkill4image/examples.md /your-project/docs/prompt-engineering/
+```
+
+使用时：
+
+```text
+请根据 docs/prompt-engineering/SKILL.md 的规则，帮我把这段中文提示词转成英文生图提示词，并提炼变量。
+```
+
+### ChatGPT / Claude / Gemini 等网页端
+
+网页端通常没有文件式 Skill 安装。可以使用以下方式：
+
+1. 打开 `SKILL.md`。
+2. 将内容粘贴到自定义 GPT、Project Instructions、Claude Project Knowledge、Gemini Gems 或对话开头。
+3. 再输入你的提示词需求。
+
+推荐开场：
+
+```text
+请把下面这份 SKILL.md 作为图像提示词工程规则。之后所有“图像反推、提示词扩写、翻译转写、变量提炼”任务都按它执行。
+```
+
+### Continue / Cline / Roo Code / 其他 VS Code Agent
+
+这些工具通常支持 Rules、Memory、Instructions 或项目上下文文件。建议采用通用目录：
+
+```bash
+mkdir -p /your-project/prompt-engineering
+cp PromptSkill4image/SKILL.md PromptSkill4image/vocabulary-banks.md PromptSkill4image/examples.md /your-project/prompt-engineering/
+```
+
+然后在对应 Agent 的规则文件中加入：
+
+```text
+When the user asks for image prompt engineering, image-to-prompt, prompt expansion, translation/transwriting, variable extraction, or PromptFill JSON, read and follow prompt-engineering/SKILL.md.
 ```
 
 ---
 
-### 直接使用（无需安装）
+## 安装兼容性说明
 
-你也可以直接将 `SKILL.md` 的内容粘贴到任何 AI 对话窗口的系统提示词或上下文中使用，无需安装任何工具。
+这个 Skill 本质上是纯 Markdown 指令，不依赖 npm、Python 包或外部服务。因此它可以被大多数 Agent 通过以下任一方式使用：
 
-You can also paste the contents of `SKILL.md` directly into any AI chat as a system prompt — no installation required.
+- 原生 Skills 目录：如 Cursor、Claude Code。
+- 项目规则或记忆：如 Windsurf、Continue、Cline、Roo Code。
+- 文档上下文引用：如 Aider、Copilot Chat。
+- 自定义系统提示词：如 ChatGPT、Claude、Gemini 网页端。
 
----
+最低要求：
 
-## 使用方式 | Usage
-
-安装后，当你说出以下内容时会自动触发：
-
-- `分析提示词` / `提示词拆分` / `拆分这段提示词`
-- `analyze this prompt` / `split this prompt` / `extract variables`
-- `生成词库` / `create template` / `提示词变量`
-
-### 三种输出模式
-
-首次使用时，助手会询问你需要哪种输出（也可直接指定）：
-
-**模式 A — 仅分析**
-
-```
-分析这段提示词：[你的提示词]
-```
-输出：变量列表、结构分析、改进建议
-
-**模式 B — 拆分 + 词库**（推荐）
-
-```
-拆分这段提示词并生成词库：[你的提示词]
-```
-输出：结构化提示词（含 `{{变量}}`）、每个变量的双语词库、示例填充版本
-
-**模式 C — 完整 PromptFill 模板**
-
-```
-帮我把这段提示词生成 PromptFill 模板：[你的提示词]
-```
-输出：模式 B 的全部内容 + 可导入 PromptFill 的完整 JSON
+- Agent 能读取或粘贴 `SKILL.md`。
+- 如需词库建议，最好同时提供 `vocabulary-banks.md`。
+- 如需示例学习，最好同时提供 `examples.md`。
 
 ---
 
-## 文件结构 | File Structure
+## 使用示例
 
+### 图像反推提示词
+
+```text
+请根据这张参考图反推一段可用于 Midjourney 的英文提示词，并给一个简洁版和高级版。
 ```
-prompt-engineering/
-├── SKILL.md              # 主技能指令（AI 读取此文件）
-├── vocabulary-banks.md   # 15+ 常用变量类别的通用词库参考
-├── examples.md           # 4 个完整使用示例
-├── README.md             # 本文件
-└── LICENSE               # MIT 许可证
+
+输出将包含：
+
+- 画面摘要
+- 极简增强版提示词
+- 高级结构化提示词
+- 可选变量与风格建议
+
+### 粗糙提示词扩写
+
+```text
+帮我优化：赛博朋克少女，雨夜街道，霓虹灯
 ```
+
+输出将包含：
+
+- 可直接复制的短提示词
+- 更专业的结构化提示词
+- 可以继续调整的维度，如镜头、光影、色彩、材质、比例
+
+### 翻译转写并提炼变量
+
+```text
+把这段中文提示词转成英文，并提炼可替换变量和词组建议：
+古风仙女，站在云海中，丁达尔光线，梦幻氛围
+```
+
+输出将包含：
+
+- 中文润色版
+- 英文生图版
+- `{{character_type}}`、`{{location}}`、`{{lighting}}`、`{{mood}}` 等变量
+- 每个变量的中英文候选词组
+
+### PromptFill 模板
+
+```text
+把这段提示词做成 PromptFill 模板 JSON：
+古风仙女，站在云海中，丁达尔光线，梦幻氛围
+```
+
+输出将包含可导入 PromptFill 的 JSON，含 `content`、`selections`、`banks` 和双语词库。
 
 ---
 
-## 内置词库覆盖 | Vocabulary Coverage
+## 输出模式
 
-详见 [`vocabulary-banks.md`](vocabulary-banks.md)，涵盖：
+默认情况下，Skill 会根据输入自动选择合适复杂度：
 
-| 类别 | 变量示例 |
-|------|---------|
-| 视觉风格 | 艺术风格、色彩方案、光照效果、情绪氛围 |
-| 主体角色 | 角色类型、发型、表情神态 |
-| 服装道具 | 服装风格、配饰、武器 |
-| 场景环境 | 场景地点、背景环境 |
-| 摄影技术 | 构图视角、景别、渲染质量、画幅比例 |
+- **极简增强版**：适合快速复制、试图、社交平台和不想使用复杂结构的用户。
+- **平衡增强版**：适合大多数图像生成需求，包含主体、场景、构图、光影、风格和质量描述。
+- **高级结构化版**：适合商业海报、产品摄影、角色设定、建筑图、信息图、可复用模板等精细控制场景。
+- **PromptFill JSON**：仅在用户明确要求模板、JSON、PromptFill 或可导入格式时输出。
+
+---
+
+## 参考变量类别
+
+`vocabulary-banks.md` 收录常用变量和双语词组，覆盖：
+
+- 视觉风格：`art_style`、`color_scheme`、`lighting`、`mood`
+- 主体角色：`character_type`、`hair_style`、`expression`
+- 服装道具：`outfit`、`accessory`、`weapon`
+- 场景环境：`location`、`background`
+- 摄影技术：`camera_angle`、`shot_type`、`render_quality`、`aspect_ratio`
 
 ---
 
 ## PromptFill 兼容性
 
-模式 C 输出的 JSON 遵循 [PromptFill](https://www.aipromptfill.com) 模板格式：
+支持以下变量语法：
 
-- `{{variable}}` — 标准占位符
-- `{{variable: 默认值}}` — 带内联默认值（V1.1 语法）
-- 所有用户可见文本使用 `{ cn: "中文", en: "English" }` 双语格式
-- JSON 中内嵌 `banks` 字段定义完整词库
+```text
+{{variable_name}}
+{{variable_name: 默认值}}
+```
 
----
+PromptFill JSON 输出遵循：
 
-## 示例 | Examples
-
-见 [`examples.md`](examples.md)，包含：
-
-1. 简单人像提示词分析（模式 A）
-2. 复杂多元素提示词拆分与词库生成（模式 B）
-3. 完整 PromptFill JSON 生成（模式 C）
-4. 英文提示词处理与双语输出
+- `id` 使用 `tpl_` 前缀。
+- `content` 支持中英文双语。
+- `selections` 为每个变量提供默认选中值。
+- `banks` 为每个变量提供 `label`、`category`、`options`。
+- `tags` 描述内容主题，不使用“图片”“视频”这类媒介类型词。
 
 ---
 
-## 贡献 | Contributing
+## 发布建议
 
-欢迎贡献新词库或示例！
+如果你准备把本仓库作为公开 Skill 发布，建议至少包含：
 
-1. Fork 本仓库
-2. 在 `vocabulary-banks.md` 中添加新变量词库
-3. 在 `examples.md` 中补充使用示例
-4. 提交 Pull Request
+- `SKILL.md`
+- `README.md`
+- `vocabulary-banks.md`
+- `examples.md`
+- `LICENSE`
 
-词库格式要求：每个变量 5–12 个选项，中英文均完整，选项之间语义差异明显。
+不建议默认发布内部开发资料：
+
+- `skills/`
+- 临时测试文件
+- 与 Prompt Fill 主应用内部实现强绑定的示例或草稿
 
 ---
 
-## 许可证 | License
+## 许可证
 
-MIT License — 详见 [LICENSE](LICENSE)
-
----
-
-## 致谢 | Acknowledgments
-
-本 Skill 基于 AI 图像生成提示词的实践经验构建，适用于 [Midjourney](https://midjourney.com)、[Stable Diffusion](https://stability.ai)、[即梦](https://jimeng.jianying.com)、[可灵](https://kling.kuaishou.com) 等主流 AI 创作平台。
-
-PromptFill JSON 格式专为 [PromptFill](https://www.aipromptfill.com) 应用设计。
+MIT License. 详见 `LICENSE`。

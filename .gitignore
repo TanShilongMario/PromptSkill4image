@@ -2,6 +2,10 @@
 .claude/
 .cursor/
 
+# 内部参考资料（公开 Skill 不需要上传）
+skills/
+templates.js
+
 # 系统文件
 .DS_Store
 Thumbs.db

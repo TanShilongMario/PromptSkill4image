@@ -1,161 +1,298 @@
 ---
 name: prompt-engineering
-description: Universal prompt engineering assistant. Deconstructs complex prompts into structured variables, generates bilingual vocabulary banks, identifies domain, evaluates quality, learns new terms, compares prompts, and optionally outputs PromptFill-compatible JSON. Use when a user wants to analyze, split, translate, learn from, compare, or template-ify any AI image/text prompt. Trigger phrases include: "analyze prompt", "split prompt", "extract variables", "create template", "learn vocabulary", "compare prompts", "词库", "提示词拆分", "提示词分析", "创建模板", "学习新词", "对比提示词".
+description: Advanced image prompt engineering assistant for Chinese-first users. Turns any input into high-quality image-generation prompts: reverse-engineers prompts from images, expands rough prompts into structured prompts, translates/transwrites prompts, extracts reusable variables, suggests phrase banks, supports minimal prompts, and optionally exports PromptFill-compatible JSON.
 ---
 
-# Prompt Engineering - 通用提示词工程助手
+# Prompt Engineering - 高级图像提示词工程 Skill
 
-将任意复杂提示词拆解为结构化变量，提供配套词库与双语翻译，支持词库扩展学习、提示词对比、质量评估，可选生成 PromptFill 兼容的 JSON 模板。
+这是一个**中文优先**的 AI 图像提示词工程 Skill。它可以把图片、粗糙想法、短关键词、中文提示词、英文提示词或中英混合输入，转成可直接用于 AI 生图工具的高质量提示词。
+
+This is a Chinese-first image prompt engineering skill. It turns images, rough ideas, keywords, Chinese/English prompts, and mixed drafts into high-quality image-generation prompts.
+
+核心目标不是把所有内容都强行变成复杂模板，而是先理解用户真正想要什么，再输出最适合当前场景的提示词版本。
 
 ---
 
-## 工作模式
+## 语言与沟通规则
 
-收到提示词后，**先询问用户需要哪种输出**（除非用户已明确指定）：
+- 默认使用中文回答，除非用户明确要求英文或双语。
+- 面向中文用户时，优先给出中文解释，同时提供可直接用于生图模型的英文提示词。
+- 如果输出双语，中文用于说明和结构理解，英文用于模型执行。
+- 不做机械直译，英文提示词应使用 Midjourney、Stable Diffusion、GPT Image 等图像模型常见表达。
+- 用户只想要极简提示词时，不要强迫输出复杂结构。
 
+---
+
+## 核心原则
+
+在写最终提示词前，先判断用户需求。
+
+如果用户意图明确，直接执行；如果缺少的信息会显著影响结果，只问一个简短澄清问题。
+
+默认判断：
+- 用户提供图片、图片 URL 或本地图片路径时，优先按“图像反推提示词”处理。
+- 用户提供短句、关键词或粗糙想法时，优先扩写成更强的图像提示词。
+- 用户要求翻译、转英文、转中文或中英双语时，执行“翻译转写”，不是逐字直译。
+- 用户要求变量、词组、模板、PromptFill、JSON、填空版时，提炼 `{{variable_name}}` 变量并提供词组建议。
+- 用户输入极短且没有要求结构化时，先输出“极简增强版”，再可选给出“高级结构化版”。
+
+---
+
+## 用户需求路由
+
+把用户请求归入以下一个或多个任务类型。
+
+### A. 图像反推提示词 / Image To Prompt
+
+适用场景：
+- 用户上传、链接或引用一张图片。
+- 用户说“反推提示词”“图生文”“看图写提示词”“img2prompt”“根据这张图写 Midjourney/SD 提示词”等。
+- 用户只有参考图，但想生成提示词或可复用模板。
+
+处理流程：
+1. 观察画面要素：主体、环境、构图、镜头、光影、色彩、材质、风格、文字、氛围。
+2. 区分高置信观察和推测性风格词。
+3. 至少输出一段可直接使用的生图提示词。
+4. 如果用户还需要模板或变量，再进入“粗糙提示词扩写”或“变量提炼”流程。
+
+注意：不要声称可以还原图片的原始隐藏参数。应说明这是对画面的实用重构。
+
+### B. 粗糙提示词扩写 / Rough Prompt Expansion
+
+适用场景：
+- 用户提供一句话、关键词、草稿提示词或半成品提示词。
+- 用户要求“优化”“扩写”“变高级”“变专业”“结构化”“适合生图”等。
+
+处理流程：
+1. 识别主体和目标图像类型。
+2. 补充真正有帮助的维度：主体细节、场景、风格、构图、光影、色彩、材质、情绪、技术质量、画幅比例、必要的负面约束。
+3. 判断应该保持极简，还是升级为结构化。
+4. 先输出可复制结果，再补充变量和建议。
+
+### C. 翻译转写与变量提炼 / Translation, Transwriting, And Variables
+
+适用场景：
+- 用户要求把提示词翻译成英文或中文。
+- 用户需要中英双语版本。
+- 用户要求提炼变量词、填空词、候选词、词组建议、模板结构。
+
+处理流程：
+1. 保留原意，重写成更适合图像模型理解的表达。
+2. 保留专有名词、风格名、品牌名、镜头术语、画幅比例和技术参数。
+3. 将可复用部分提炼为 `{{variable_name}}`。
+4. 为重要变量提供 5-12 个有区分度的候选词组。
+5. 如果原提示词已经很好，做轻量润色，不要过度改写。
+
+---
+
+## 输出策略
+
+优先输出结果，再解释原因。推荐顺序：
+
+1. 最终提示词
+2. 可选结构化版本
+3. 变量与词组建议
+4. 进一步优化建议
+
+大多数情况下输出两个版本：
+- **极简增强版**：简洁、直接、适合快速复制试图。
+- **高级结构化版**：维度更完整，适合精细控制和复用。
+
+如果用户明确说“只要一句”“简单点”“不要结构化”，只输出极简增强版，加一条简短建议即可。
+
+如果用户要求 PromptFill、模板、变量、JSON 或可导入格式，才输出结构化变量和 PromptFill JSON。
+
+---
+
+## 提示词复杂度
+
+### Level 1：极简版
+
+适合短提示词、快速试图、不喜欢复杂结构的用户。
+
+格式：
+
+```text
+[主体]，[核心风格]，[主要场景/构图]，[光影或氛围]，[质量/风格收尾]
 ```
-我可以提供以下服务，请选择：
 
-A. 仅分析      — 提取变量、识别领域、评估质量、给出改进建议
-B. 拆分 + 词库  — 提取变量，并为每个变量生成候选词库（推荐）
-C. 完整模板输出 — 生成 PromptFill 兼容的 JSON 模板（含词库）
-D. 学习新词    — 从提示词中提取新变量/词条，扩展词库
-E. 对比分析    — 对比两段提示词的结构差异
+示例：
 
-（默认推荐 B）
+```text
+A cyberpunk girl in a rainy neon alley, cinematic lighting, high-detail portrait, shallow depth of field.
 ```
 
----
+### Level 2：平衡版
 
-## 核心工作流
+默认推荐给大多数用户。
 
-### Step 1：解析提示词
+格式：
 
-识别所有可变部分，统一标注为 `{{variable_name}}` 格式：
+```text
+[主体和关键特征], [环境], [动作或姿态], [构图/镜头], [光影], [色彩], [风格], [质量细节], [必要时加入画幅比例]
+```
 
-**识别模式**：
-- `[内容]` → `{{variable_name}}`
-- `（内容）`/ `(内容)` → `{{variable_name}}`
-- `__________` 下划线占位 → `{{variable_name}}`
-- 语义上明显可替换的名词/短语 → `{{variable_name}}`
-- 已有 `{{key}}` 或 `{{key: 内联默认值}}` → 保留并识别（`baseKey` 为冒号前部分）
+### Level 3：结构化版
 
-**变量命名规则**：
-- 小写英文 + 下划线：`art_style`、`character_type`
-- 名称应描述变量语义，而非具体值
-- 同一 baseKey 多处出现合并计数，不分裂
-- 同义变量归并为同一 key
+适合用户要求高级、模板化、商业级、可复用、PromptFill-ready 的场景。
 
----
-
-### Step 2：领域识别与结构分析报告
-
-**领域分类**（根据主要描述对象判断）：
-
-| 领域 | 触发特征 | 典型变量 |
-|------|---------|---------|
-| `portrait` | 人像、角色、人物 | character_type, expression, outfit |
-| `product` | 产品、商品、物体 | product_type, material, background |
-| `design` | 平面、海报、UI | layout, typography, color_scheme |
-| `art` | 纯艺术、概念图 | art_style, mood, composition |
-| `common` | 通用 / 无法判断 | — |
-
-**输出标准化分析表格**：
+格式：
 
 ```markdown
-## 📋 提示词分析
-
-- 总长度：XXX 字符 / 变量数量：X 个
-- 主要领域：portrait / 次要领域：art
-
-| 变量名 | 当前值/占位 | 内联值(若有) | 语义类别 | 词库状态 |
-|--------|------------|------------|---------|---------|
-| art_style | 赛博朋克 | — | visual | ✓ 通用词库已有 |
-| character_type | 少女 | — | character | ✓ 通用词库已有 |
-| weapon | 光剑 | — | item | ✎ 建议新建 |
-| lighting | 霓虹灯光 | — | visual | ✓ 通用词库已有 |
+主体：...
+场景：...
+构图：...
+光影：...
+色彩：...
+风格：...
+细节：...
+质量：...
+负面约束：...
 ```
-
-**变量语义类别**（参考 [vocabulary-banks.md](vocabulary-banks.md)）：
-
-| 类别 | 英文 key | 说明 |
-|------|---------|------|
-| 主体 | `character` | 人物、角色、生物 |
-| 道具 | `item` | 物品、配饰、武器 |
-| 动作 | `action` | 动词、姿势、行为 |
-| 场景 | `location` | 地点、环境、背景 |
-| 视觉 | `visual` | 风格、色彩、光影 |
-| 技术 | `technical` | 镜头、渲染、构图 |
-| 其他 | `other` | 不属于以上任何类别 |
 
 ---
 
-### Step 3：词库生成（模式 B/C）
+## 图像提示词维度
 
-为每个变量生成 **5–12 个候选词条**：
+扩写或反推时，从以下维度中选择必要项，不要机械塞满所有维度。
+
+核心维度：
+- `subject`：主体，人物、产品、物体、生物、地点或概念。
+- `action`：动作、姿势、行为、互动。
+- `scene`：场景、背景、环境。
+- `style`：视觉风格、艺术流派、渲染风格、设计语言。
+
+视觉控制：
+- `composition`：版式、构图、画面布局。
+- `camera_angle`：平视、低角度、俯视、特写、广角等。
+- `lighting`：影棚柔光、电影感打光、霓虹灯光、黄金时刻、体积光。
+- `color_scheme`：莫兰迪色、马卡龙、金红暖色、黑白高对比等。
+- `mood`：宁静、戏剧化、奢华、未来感、可爱、神秘等。
+- `material`：玻璃、金属、布料、木材、陶瓷、皮肤纹理、纸张颗粒等。
+- `render_quality`：照片写实、超高细节、编辑大片、3D 渲染、概念艺术。
+- `aspect_ratio`：1:1、16:9、9:16、4:3、3:2、21:9。
+
+常见图像类型：
+- 人像与角色设定
+- 产品摄影与商业海报
+- 品牌概念单品
+- 建筑与城市海报
+- 信息图与博物馆图鉴
+- UI、图标与平面设计
+- 时尚大片与杂志封面
+- 漫画、插画、绘本风格
+- 微缩场景与创意物体摄影
+- 3D 渲染与工业设计
+- 宠物、游戏、幻想、科幻与概念艺术
+
+---
+
+## 变量规则
+
+只有当用户需要复用、替换、选择或做模板时，才使用变量。
+
+语法：
+- 标准变量：`{{variable_name}}`
+- 内联默认值：`{{variable_name: 默认值}}`
+
+命名规则：
+- 使用小写英文和下划线。
+- 变量名描述语义角色，而不是具体值。
+- 好例子：`art_style`、`character_type`、`lighting`、`camera_angle`、`product_type`
+- 坏例子：`cyberpunk`、`beautifulGirl`、`camera-angle`
+
+分类：
+- `character`：人物、角色、生物、身体特征、表情。
+- `item`：服装、道具、配饰、产品、材质。
+- `action`：动作、姿势、手势、互动。
+- `location`：地点、场景、背景环境。
+- `visual`：风格、色彩、光影、构图、氛围。
+- `technical`：镜头、相机、画幅比例、质量、渲染参数。
+- `other`：其他无法归类的内容。
+
+提炼变量时，为重要变量提供 5-12 个候选词组。中文用户场景下，候选词组应尽量中英双语。
+
+---
+
+## 标准输出模板
+
+### A. 图像反推输出
 
 ```markdown
-### {{art_style}} — 艺术风格
+## 图像提示词
 
-| 中文 | English |
-|------|---------|
-| 赛博朋克 | Cyberpunk |
-| 蒸汽朋克 | Steampunk |
-| 水墨国风 | Chinese Ink Painting |
-| 吉卜力风格 | Ghibli Style |
-| 超现实主义 | Surrealism |
-| 暗黑哥特 | Dark Gothic |
-| 新海诚风格 | Makoto Shinkai Style |
+### 极简增强版
+...
+
+### 高级结构化版
+...
+
+### 画面要素
+- 主体：...
+- 场景：...
+- 构图：...
+- 光影：...
+- 色彩：...
+- 风格：...
+
+### 进一步建议
+- ...
 ```
 
-**词库生成规则**：
-- 覆盖主流常见选项，兼顾小众精品
-- 双语完整，英文为 AI 平台主流表达
-- 选项之间语义具有明显差异（避免同义重复）
-- 内联默认值（`{{key: 某值}}`）中的具体词自动纳入词库
-- 若内联值与通用词库某选项一致，标注为"正式选项"；若不在词库中，标注为"临时词条，建议加入词库"
+### B. 粗糙提示词扩写输出
+
+```markdown
+## 优化后的提示词
+
+### 极简增强版
+...
+
+### 高级结构化版
+...
+
+### 为什么这样优化
+- ...
+
+### 进一步建议
+- ...
+```
+
+### C. 翻译转写与变量输出
+
+```markdown
+## 翻译转写结果
+
+### 中文润色版
+...
+
+### 英文生图版
+...
+
+## 变量提炼
+| 变量 | 当前值 | 类别 | 候选词组 |
+|---|---|---|---|
+| `art_style` | ... | visual | ... |
+
+## 词组建议
+### `{{art_style}}`
+- 中文 / English
+
+## 进一步建议
+- ...
+```
 
 ---
 
-### Step 4：重构提示词
+## PromptFill JSON 输出
 
-输出三个版本：
+仅当用户明确要求 PromptFill、JSON、模板导出或可导入格式时输出。
 
-**结构化版本**（变量已标注）：
-```
-{{art_style}}风格的{{character_type}}，
-手持{{weapon}}，站在{{location}}中。
-{{lighting}}光线，{{camera_angle}}构图。
-```
-
-**内联默认值版本**（推荐值已内嵌，仍可替换）：
-```
-{{art_style: 赛博朋克}}风格的{{character_type: 少女}}，
-手持{{weapon: 光剑}}，站在{{location: 废弃工厂}}中。
-{{lighting: 霓虹灯光}}，{{camera_angle: 低角度仰拍}}构图。
-```
-
-**示例填充版本**（从词库随机抽取值填充，供直接测试）：
-```
-蒸汽朋克风格的机甲战士，
-手持符文长剑，站在赛博朋克都市中。
-体积光束照射，俯视鸟瞰构图。
-```
-
-> 示例填充版本可直接复制到 AI 平台测试效果，确认满意后再进行下一步。
-
----
-
-### Step 5：PromptFill JSON 输出（仅模式 C）
-
-> 完整示例见 [examples.md](examples.md)
-
-生成完整 JSON：
+结构如下：
 
 ```json
 {
-  "id": "tpl_<descriptive_name>",
-  "name": { "cn": "模板中文名", "en": "Template English Name" },
+  "id": "tpl_descriptive_name",
+  "name": { "cn": "中文模板名", "en": "English Template Name" },
   "content": {
     "cn": "{{art_style: 赛博朋克}}风格的{{character_type}}...",
     "en": "{{art_style: Cyberpunk}} style {{character_type}}..."
@@ -164,7 +301,7 @@ E. 对比分析    — 对比两段提示词的结构差异
   "selections": {
     "art_style": { "cn": "赛博朋克", "en": "Cyberpunk" }
   },
-  "tags": ["角色", "风格"],
+  "tags": ["人物", "摄影"],
   "language": ["cn", "en"],
   "banks": {
     "art_style": {
@@ -179,152 +316,367 @@ E. 对比分析    — 对比两段提示词的结构差异
 }
 ```
 
-**字段说明**：
-- `id`：唯一标识符，`tpl_` 前缀 + 英文描述
-- `content`：双语提示词正文，支持 `{{variable}}` 和 `{{variable: 内联值}}` 两种写法
-- `selections`：每个变量的默认选中值（各一个双语对象）
-- `banks`：随模板附带的词库定义（含 label、category、options）
-- `tags`：内容主题标签（不含"图片"、"视频"等类型词）
+规则：
+- `id` 使用 `tpl_` 前缀。
+- `content` 支持 `{{variable}}` 和 `{{variable: 默认值}}`。
+- `selections` 为每个变量提供一个默认值。
+- `banks` 为变量提供可选词库，包含 `label`、`category`、`options`。
+- `tags` 描述内容主题，不要把“图片”“视频”当作主题标签。
 
 ---
 
-### Step 6：词库扩展学习（模式 D）
+## 质量检查清单
 
-从提示词或用户提供的词条中学习新变量，**半自动模式**（生成建议后等待人工审核）：
+最终输出前检查：
+- 提示词是否有清晰主体。
+- 输出复杂度是否符合用户真实需求。
+- 风格词和技术词是否有用，而不是堆砌。
+- 英文是否是自然的图像模型表达。
+- 变量是否可复用，没有过度拆碎。
+- 极简用户没有被迫使用复杂模板。
+- 进一步建议是否具体、可执行。
 
-**工作流程**：
+---
 
+## 进一步建议策略
+
+在有帮助时，用简短建议结尾：
+- 询问是否需要针对 Midjourney、Stable Diffusion、GPT Image、即梦、可灵等平台微调。
+- 仅在平台适合时建议负面提示词。
+- 建议画幅比例、风格变体或镜头变体。
+- 当用户需要复用或批量迭代时，建议转换为 PromptFill 模板。
+---
+name: prompt-engineering
+description: Advanced image prompt engineering assistant. Turns any input into high-quality image-generation prompts: reverse-engineers prompts from images, expands rough prompts into structured prompts, translates/transwrites prompts, extracts reusable variables, suggests phrase banks, supports minimal prompts, and optionally exports PromptFill-compatible JSON.
+---
+
+# Prompt Engineering - Advanced Image Prompt Skill
+
+This skill turns almost any user input into a usable image-generation prompt. It supports image-to-prompt, rough-prompt expansion, prompt translation/transwriting, variable extraction, phrase suggestions, minimal prompts, structured prompts, and optional PromptFill JSON.
+
+The primary goal is not to force every prompt into a complex template. The goal is to understand what the user wants, then output the strongest useful image prompt at the right level of complexity.
+
+---
+
+## Core Principle
+
+Always identify the user's actual need before writing the final prompt.
+
+If the user's intent is clear, proceed directly. If the intent is ambiguous and the missing choice changes the output significantly, ask one short clarification question.
+
+Default assumptions:
+- If the user provides an image or image URL/path, treat it as image-to-prompt unless they clearly ask for another task.
+- If the user provides a short or rough idea, expand it into a stronger prompt.
+- If the user provides a prompt in one language and asks for another language, translate and transwrite it for image-generation models.
+- If the user asks for variables, template, PromptFill, word bank, or options, produce structured variables and phrase suggestions.
+- If the input is extremely short and the user does not ask for structure, preserve a minimal version first, then offer a structured upgrade.
+
+---
+
+## User Need Router
+
+Classify the request into one or more of these tracks.
+
+### Track A: Image To Prompt
+
+Use when:
+- The user uploads, links, or references an image.
+- The user asks for reverse prompt, img2prompt, image prompt, "look at this image", "describe this as a prompt", or similar.
+- The user only has a reference image and wants a prompt or template.
+
+Process:
+1. Observe visible elements: subject, environment, composition, camera, lighting, color, material, style, text, mood.
+2. Separate high-confidence observations from inferred style terms.
+3. Output at least one directly usable image prompt.
+4. If the user wants a reusable template, continue into Track B after generating the text prompt.
+
+Do not claim to recover the original hidden generation parameters. Say the result is a practical reconstruction.
+
+### Track B: Rough Prompt Expansion
+
+Use when:
+- The user provides a rough phrase, concept, draft prompt, keywords, or incomplete prompt.
+- The user asks to optimize, expand, improve, make advanced, make professional, or make structured.
+
+Process:
+1. Identify the subject and intended image type.
+2. Add only useful missing dimensions: subject details, scene, style, composition, lighting, color, material, mood, technical quality, aspect ratio, and optional negative constraints.
+3. Decide whether the prompt should stay minimal or become structured.
+4. Output the usable prompt first, then explain variables and options if helpful.
+
+### Track C: Translation, Transwriting, And Variables
+
+Use when:
+- The user asks to translate a prompt.
+- The user wants Chinese/English versions.
+- The user wants variable words, fill-in words, alternatives, phrase suggestions, or a prompt template.
+
+Process:
+1. Translate meaning, not word order. Use natural image-model English.
+2. Preserve named styles, brand names, camera terms, aspect ratios, and technical parameters when appropriate.
+3. Extract reusable variables with `{{variable_name}}`.
+4. Provide phrase suggestions for important variables.
+5. If the original prompt is already good, keep the refined version close rather than rewriting aggressively.
+
+---
+
+## Output Policy
+
+Always output the result before long analysis. Prefer this order:
+
+1. Final prompt
+2. Optional structured version
+3. Variables and phrase suggestions
+4. Further suggestions
+
+For most users, produce two prompt versions:
+- Minimal enhanced version: concise, direct, suitable for users who dislike complex prompts.
+- Advanced structured version: richer, grouped by visual dimensions, suitable for precision control.
+
+If the user explicitly asks for only a short prompt, output only the minimal enhanced version plus one short improvement note.
+
+If the user asks for PromptFill, template, variables, or JSON, include structured variables and optional PromptFill-compatible JSON.
+
+---
+
+## Prompt Complexity Levels
+
+### Level 1: Minimal
+
+Use for extremely short prompts, fast ideation, or users who prefer simple prompts.
+
+Format:
+
+```text
+[subject], [core style], [main scene/composition], [lighting or mood], [quality/style finish]
 ```
-输入提示词 / 词条列表
-    ↓
-对照 vocabulary-banks.md 检查现有词库
-    ↓
-标记新变量（不在词库中的 key）
-    ↓
-提取可复用的候选选项
-    ↓
-评估复用性（1-10 分）
-    ↓
-生成学习报告 → 等待用户审核
+
+Example:
+
+```text
+A cyberpunk girl in a rainy neon alley, cinematic lighting, high-detail portrait, shallow depth of field.
 ```
 
-**学习报告格式**：
+### Level 2: Balanced
+
+Use as the default for most users.
+
+Format:
+
+```text
+[subject with key traits], [environment], [action or pose], [composition/camera], [lighting], [color palette], [style], [quality details], [aspect ratio if relevant]
+```
+
+### Level 3: Structured
+
+Use when the user asks for advanced, template, repeatable, professional, commercial, or PromptFill-ready output.
+
+Format:
 
 ```markdown
-## 元素学习报告
-
-### ✨ 新变量：{{weapon_type}}
-- 推荐类别：`item`
-- 复用性评分：8/10（多种场景通用）
-- 建议选项：
-
-| 中文 | English |
-|------|---------|
-| 符文长剑 | Runic Longsword |
-| 光子步枪 | Photon Rifle |
-| 时空镰刀 | Time-Space Scythe |
-
-**审核选项**：
-- [ ] 批准加入词库
-- [ ] 需要修改（请说明）
-- [ ] 拒绝（理由）
-
----
-
-### 🔄 现有词库扩展建议：{{lighting}} 新增选项
-- 建议添加：`{ cn: "张艺谋电影灯光", en: "Zhang Yimou Cinematic Lighting" }`
-- 原因：未在现有词库中，具有较高复用性
-
----
-
-### 💡 内联词条升级建议
-- `{{art_style: 赛博道家}}` — "赛博道家"不在词库中，建议升级为正式选项
-- `{{lighting: 月光冷光}}` — "月光冷光"已在词库中，可改回 `{{lighting}}` 普通占位
+Subject: ...
+Scene: ...
+Composition: ...
+Lighting: ...
+Color: ...
+Style: ...
+Details: ...
+Quality: ...
+Negative constraints: ...
 ```
 
-**复用性评分标准**：
+---
 
-| 分数 | 含义 |
-|------|------|
-| 8–10 | 通用性强，多种场景复用，建议立即添加 |
-| 5–7  | 有一定复用价值，可选添加 |
-| 1–4  | 场景高度专属，建议保持为内联临时词条 |
+## Image Prompt Dimensions
+
+When expanding or reverse-engineering prompts, choose relevant dimensions from this list. Do not force all dimensions into every prompt.
+
+Core:
+- `subject`: main person, product, object, creature, place, or concept
+- `action`: pose, motion, behavior, interaction
+- `scene`: location, background, environment
+- `style`: visual style, art movement, rendering style, design language
+
+Visual control:
+- `composition`: layout, framing, spatial arrangement
+- `camera_angle`: eye-level, low angle, bird's-eye view, close-up, wide shot
+- `lighting`: studio soft light, cinematic lighting, neon lighting, golden hour, volumetric light
+- `color_scheme`: muted tones, pastel palette, gold-red warm tones, black-and-white contrast
+- `mood`: serene, dramatic, luxurious, futuristic, playful, mysterious
+- `material`: glass, metal, fabric, wood, ceramic, skin texture, paper grain
+- `render_quality`: photorealistic, ultra-detailed, editorial, 3D render, concept art
+- `aspect_ratio`: 1:1, 16:9, 9:16, 4:3, 3:2, 21:9
+
+Common image types, inspired by PromptFill templates:
+- portrait and character design
+- product photography and commercial poster
+- brand concept object
+- architecture and city poster
+- infographic and museum-style diagram
+- UI, icon, and graphic design
+- editorial fashion and magazine cover
+- comic, manga, illustration, and storybook style
+- miniature scene and creative object photography
+- 3D render and industrial design
+- pet, game, fantasy, sci-fi, and conceptual art
 
 ---
 
-### Step 7：对比分析（模式 E）
+## Variable Rules
 
-对比两段提示词的结构差异：
+Use variables only when the user benefits from reuse, selection, or customization.
+
+Syntax:
+- Standard variable: `{{variable_name}}`
+- Inline default: `{{variable_name: default value}}`
+
+Naming:
+- Use lowercase English and underscores.
+- Name the semantic role, not the specific value.
+- Good: `art_style`, `character_type`, `lighting`, `camera_angle`, `product_type`
+- Bad: `cyberpunk`, `beautifulGirl`, `camera-angle`
+
+Categories:
+- `character`: people, roles, creatures, body traits, expressions
+- `item`: clothing, props, accessories, products, materials
+- `action`: actions, poses, gestures, interactions
+- `location`: places, environments, background settings
+- `visual`: style, color, lighting, composition, mood
+- `technical`: camera, lens, aspect ratio, quality, render settings
+- `other`: anything that does not fit above
+
+When extracting variables, include 5-12 phrase suggestions for important variables when useful. Suggestions should be meaningfully different, bilingual when the user works in Chinese and English.
+
+---
+
+## Standard Output Templates
+
+### A. Image To Prompt Output
 
 ```markdown
-## 对比分析报告
+## Image Prompt
 
-### 📊 基本对比
+### Minimal Version
+...
 
-| 维度 | 提示词 A | 提示词 B |
-|------|---------|---------|
-| 总长度 | 120 字符 | 85 字符 |
-| 变量数量 | 8 个 | 5 个 |
-| 主要领域 | portrait | portrait |
-| 结构层次 | 3 层 | 1 层 |
+### Advanced Version
+...
 
-### 🔍 变量差异
+### Observed Elements
+- Subject: ...
+- Scene: ...
+- Composition: ...
+- Lighting: ...
+- Color: ...
+- Style: ...
 
-| 变量名 | A | B | 说明 |
-|--------|---|---|------|
-| art_style | ✓ | ✓ | 两者均有 |
-| lighting | ✓ | ✗ | A 有，B 缺失 |
-| camera_angle | ✗ | ✓ | B 有，A 缺失 |
-| render_quality | ✓ | ✗ | A 更专业 |
+### Further Suggestions
+- ...
+```
 
-### 💡 结论
-- A 更完整，适合精细控制
-- B 更简洁，适合快速测试
-- 建议：将 A 的 `{{lighting}}` 和 `{{render_quality}}` 补充到 B 中
+### B. Rough Prompt Expansion Output
+
+```markdown
+## Enhanced Prompt
+
+### Minimal Version
+...
+
+### Advanced Version
+...
+
+### Why This Works
+- ...
+
+### Further Suggestions
+- ...
+```
+
+### C. Translation And Variables Output
+
+```markdown
+## Transwritten Prompt
+
+### Chinese
+...
+
+### English
+...
+
+## Variables
+| Variable | Current Value | Category | Suggestions |
+|---|---|---|---|
+| `art_style` | ... | visual | ... |
+
+## Phrase Suggestions
+### `{{art_style}}`
+- 中文 / English
+
+## Further Suggestions
+- ...
 ```
 
 ---
 
-## 质量评估
+## PromptFill JSON Output
 
-| 维度 | 评分 | 说明 |
-|------|------|------|
-| 完整性 | 8/10 | 主体、风格、场景均有描述 |
-| 专业性 | 7/10 | 建议补充摄影参数 |
-| 可用性 | 8/10 | 结构清晰，变量定义明确，易于理解 |
-| 可变性 | 9/10 | 变量划分合理，覆盖面广 |
-| 双语质量 | 8/10 | 英文表达地道 |
+Only include this when the user asks for PromptFill, JSON, template export, or importable format.
 
-**常见改进建议**：
-- 添加 `{{lighting}}` 光照参数
-- 补充 `{{camera_angle}}` 构图视角
-- 建议增加 `{{mood}}` 情绪/氛围描述
-- 补充 `{{render_quality}}` 提升专业性
+Use this shape:
+
+```json
+{
+  "id": "tpl_descriptive_name",
+  "name": { "cn": "中文模板名", "en": "English Template Name" },
+  "content": {
+    "cn": "{{art_style: 赛博朋克}}风格的{{character_type}}...",
+    "en": "{{art_style: Cyberpunk}} style {{character_type}}..."
+  },
+  "imageUrl": "https://placehold.co/600x400/png?text=Template",
+  "selections": {
+    "art_style": { "cn": "赛博朋克", "en": "Cyberpunk" }
+  },
+  "tags": ["人物", "摄影"],
+  "language": ["cn", "en"],
+  "banks": {
+    "art_style": {
+      "label": { "cn": "艺术风格", "en": "Art Style" },
+      "category": "visual",
+      "options": [
+        { "cn": "赛博朋克", "en": "Cyberpunk" },
+        { "cn": "蒸汽朋克", "en": "Steampunk" }
+      ]
+    }
+  }
+}
+```
+
+Rules:
+- `id` starts with `tpl_`.
+- `content` may use `{{variable}}` or `{{variable: inline default}}`.
+- `selections` contains one default value per variable.
+- `banks` contains reusable options with `label`, `category`, and `options`.
+- Tags describe content themes, not media types. Do not use "image" or "video" as content tags.
 
 ---
 
-## 双语翻译规则
+## Quality Checklist
 
-1. **英文优先用 AI 平台通用表达**，不直译中文（如"赛博朋克少女"→ "cyberpunk girl"，而非 "cyber punk young lady"）
-2. **专有名词保留英文**（如 `Ghibli Style`）
-3. **描述性短语使用地道英文表达**，避免机械翻译
-4. **技术参数用专业术语**（如 `f/2.8 aperture`、`bokeh effect`）
-
----
-
-## 快速参考：常用变量词库
-
-通用变量列表见 [vocabulary-banks.md](vocabulary-banks.md)，涵盖：
-- 艺术风格、角色类型、服装配饰
-- 场景环境、光照效果、构图视角
-- 色彩方案、摄影参数、情绪氛围
+Before finalizing, check:
+- The prompt has a clear subject.
+- The output matches the user's requested complexity.
+- The style and technical terms are useful, not decorative filler.
+- Translation reads naturally for image-generation models.
+- Variables are reusable and not over-fragmented.
+- Minimal users are not forced into a heavy template.
+- Further suggestions are concrete and actionable.
 
 ---
 
-## 示例对话
+## Further Suggestions Policy
 
-完整示例见 [examples.md](examples.md)，包含：
-- 简单人像提示词拆分（模式 A）
-- 复杂多段提示词拆分 + 词库（模式 B）
-- PromptFill JSON 生成（模式 C）
-- 英文提示词双语处理
+End with practical next steps when helpful:
+- ask whether the user wants Midjourney, Stable Diffusion, GPT Image, or another platform tuning;
+- suggest adding negative prompts only when the platform benefits from them;
+- suggest aspect ratio and style variants;
+- suggest turning the prompt into a PromptFill template when the user is iterating or reusing it.
